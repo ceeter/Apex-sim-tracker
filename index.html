@@ -886,18 +886,7 @@ function startDemo(){
       el.textContent=t+'°';el.className='tire-val '+(t>240?'hot':t>200?'warm':t>160?'ok':'cool');
     });
   },350);
-recordTelemetry({
-  speed: spd,
-  rpm: parseFloat(rpm),
-  throttle: thr,
-  brake: brk,
-  gear: Math.min(Math.ceil(spd/45),8),
-  extra: currentGame === 'fh6'
-    ? bst
-    : currentGame === 'f1'
-    ? ers
-    : fuel
-});
+}
 function setLive(id,v){document.getElementById(id).textContent=v;}
 function setEl(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
 function recordTelemetry(data){
