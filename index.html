@@ -36,6 +36,17 @@ header{height:var(--header-h);flex-shrink:0;display:flex;align-items:center;just
 .game-pill.active-f1{color:var(--f1);border-bottom-color:var(--f1);}
 .game-pill.active-ir{color:var(--ir);border-bottom-color:var(--ir);}
 
+/* GLOBAL MODE TOGGLE */
+.mode-bar{height:38px;display:flex;border-bottom:1px solid var(--border);background:var(--surface2);}
+.mode-btn{flex:1;background:none;border:none;color:var(--text-dim);font-family:'Share Tech Mono',monospace;font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;}
+.mode-btn.active{background:var(--accent);color:#080a0d;}
+body.race-mode{--accent:#3ae8ff;}
+body.drift-mode{--accent:#ff7a00;}
+.drift-only{display:none;}
+body.drift-mode .race-only{display:none;}
+body.drift-mode .drift-only{display:block;}
+body.race-mode .race-only{display:block;}
+
 /* SESSION TABS */
 .session-tabs{height:var(--tab-h);flex-shrink:0;display:flex;align-items:stretch;overflow-x:auto;overflow-y:hidden;border-bottom:1px solid var(--border);background:var(--surface);scrollbar-width:none;}
 .session-tabs::-webkit-scrollbar{display:none;}
@@ -216,6 +227,12 @@ svg.chart{width:100%;height:68px;overflow:visible;}
   <button class="game-pill active-fh6" id="pill-fh6" onclick="selectGame('fh6')">🎮 Forza Horizon 6</button>
   <button class="game-pill" id="pill-f1"  onclick="selectGame('f1')">🏎 F1 25</button>
   <button class="game-pill" id="pill-ir"  onclick="selectGame('ir')">🏁 iRacing</button>
+</div>
+
+<!-- Global Mode Toggle -->
+<div class="mode-bar">
+  <button class="mode-btn active" id="raceModeBtn" onclick="setMode('race')">Race / Time Attack</button>
+  <button class="mode-btn" id="driftModeBtn" onclick="setMode('drift')">Drift</button>
 </div>
 
 <!-- Session Tabs -->
@@ -529,7 +546,20 @@ let activeSession = 0;
 let sessionTimer = null, sessionSecs = 0;
 let demoInterval = null, telemInterval = null;
 let wsConns = { fh6:null, f1:null, ir:null };
+let currentMode = localStorage.getItem('apex_mode') || 'race';
 
+function setMode(mode){
+  currentMode = mode;
+  localStorage.setItem('apex_mode', mode);
+
+  document.body.classList.remove('race-mode','drift-mode');
+  document.body.classList.add(mode === 'drift' ? 'drift-mode' : 'race-mode');
+
+  document.getElementById('raceModeBtn').classList.toggle('active', mode === 'race');
+  document.getElementById('driftModeBtn').classList.toggle('active', mode === 'drift');
+
+  showToast(mode === 'drift' ? 'Drift mode active' : 'Race mode active');
+}
 // ── Game switching ────────────────────────────────────
 function selectGame(g) {
   currentGame = g;
@@ -897,6 +927,7 @@ function importCSV(inp){
 
 // ── Init ──────────────────────────────────────────────
 selectGame('fh6');
+setMode(currentMode);
 renderTabs();renderLaps();renderSummary();renderChart();
 document.getElementById('setupNotes').value=sessions[0].notes||'';
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();addLap();}});
