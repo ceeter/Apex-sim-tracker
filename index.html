@@ -1072,6 +1072,84 @@ function recordTelemetry(data){
   }
 }
 function setTbar(k,pct,max,lbl){document.getElementById('tBar_'+k).style.width=Math.min(100,pct)+'%';document.getElementById('tVal_'+k).textContent=lbl;}
+function handleTelemetryPacket(d, source='ws'){
+  let speed = 0;
+  let rpm = 0;
+  let gear = 0;
+  let throttle = 0;
+  let brake = 0;
+  let clutch = 0;
+  let steering = 0;
+  let extraValue = 0;
+
+  if(source === 'demo'){
+    speed = d.speed || 0;
+    rpm = d.rpm || 0;
+    gear = d.gear || 0;
+    throttle = d.throttle || 0;
+    brake = d.brake || 0;
+    clutch = d.clutch || 0;
+    steering = d.steering || 0;
+    extraValue = d.extra || 0;
+  } else {
+    speed = d.speed !== undefined ? Math.round(d.speed * 2.237) : 0;
+    rpm = d.rpm !== undefined ? d.rpm / 1000 : 0;
+    gear = d.gear || 0;
+    throttle = d.throttle !== undefined ? Math.round(d.throttle * 100) : 0;
+    brake = d.brake !== undefined ? Math.round(d.brake * 100) : 0;
+    clutch = d.clutch !== undefined ? Math.round(d.clutch * 100) : 0;
+    steering = d.steering !== undefined ? Math.round(d.steering * 100) : 0;
+
+    if(currentGame === 'fh6'){
+      if(currentMode === 'drift'){
+        extraValue = d.driftAngle !== undefined
+          ? Math.round(d.driftAngle)
+          : Math.round(Math.abs(steering) * 0.65);
+      } else {
+        extraValue = d.boost !== undefined ? Math.round(d.boost * .145) : 0;
+      }
+    } else if(currentGame === 'f1'){
+      extraValue = d.ersStoreEnergy !== undefined ? Math.round(d.ersStoreEnergy / 1000) : 0;
+    } else if(currentGame === 'ir'){
+      extraValue = d.FuelLevel !== undefined ? Number(d.FuelLevel.toFixed(1)) : 0;
+    }
+  }
+
+  setLive('lSpeed', speed);
+  setLive('lRPM', Number(rpm).toFixed(1));
+  setLive('lGear', gear);
+  setLive('lThrottle', throttle);
+  setLive('lBrake', brake);
+
+  setTbar('throttle', throttle, 100, throttle + '%');
+  setTbar('brake', brake, 100, brake + '%');
+  setTbar('clutch', clutch, 100, clutch + '%');
+
+  if(currentMode === 'drift'){
+    setLive('lCell6', extraValue);
+    setTbar('boost', Math.min((extraValue / 60) * 100, 100), 100, extraValue + '°');
+  } else if(currentGame === 'f1'){
+    setLive('lCell6', extraValue);
+    setTbar('boost', Math.min((extraValue / 4000) * 100, 100), 100, extraValue + 'kJ');
+  } else if(currentGame === 'ir'){
+    setLive('lCell6', extraValue);
+    setTbar('boost', Math.min((extraValue / 50) * 100, 100), 100, extraValue + 'L');
+  } else {
+    setLive('lCell6', extraValue);
+    setTbar('boost', Math.min((extraValue / 22) * 100, 100), 100, extraValue + 'psi');
+  }
+
+  handleTelemetryPacket({
+  speed: spd,
+  rpm: parseFloat(rpm),
+  throttle: thr,
+  brake: brk,
+  clutch: clut,
+  steering: steering,
+  gear: Math.min(Math.ceil(spd/45),8),
+  extra: extraValue
+}, 'demo');
+}
 
 // ── WebSocket ─────────────────────────────────────────
 function connectWS(game){
@@ -1103,6 +1181,8 @@ function connectWS(game){
     try{
       const d=JSON.parse(e.data);
       if(game!==currentGame)return; // only process active game
+      handleTelemetryPacket(d, 'ws');
+      
       // Common fields
       if(d.speed!==undefined)setLive('lSpeed',Math.round(d.speed*2.237));
       if(d.rpm!==undefined)setLive('lRPM',(d.rpm/1000).toFixed(1));
