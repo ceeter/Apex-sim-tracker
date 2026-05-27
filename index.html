@@ -835,9 +835,31 @@ function renderLaps(){
 
 // ── Stats ─────────────────────────────────────────────
 function renderTelemetrySummary(){
+  const telemetry = sessions[activeSession].telemetry || [];
 
-  ...
+  const maxSpeedEl = document.getElementById('telMaxSpeed');
+  const avgThrottleEl = document.getElementById('telAvgThrottle');
+  const avgBrakeEl = document.getElementById('telAvgBrake');
+  const samplesEl = document.getElementById('telSamples');
 
+  if(!maxSpeedEl || !avgThrottleEl || !avgBrakeEl || !samplesEl) return;
+
+  samplesEl.textContent = telemetry.length;
+
+  if(!telemetry.length){
+    maxSpeedEl.textContent = '—';
+    avgThrottleEl.textContent = '—';
+    avgBrakeEl.textContent = '—';
+    return;
+  }
+
+  const maxSpeed = Math.max(...telemetry.map(t => t.speed || 0));
+  const avgThrottle = telemetry.reduce((sum,t)=>sum+(t.throttle||0),0) / telemetry.length;
+  const avgBrake = telemetry.reduce((sum,t)=>sum+(t.brake||0),0) / telemetry.length;
+
+  maxSpeedEl.textContent = Math.round(maxSpeed) + ' MPH';
+  avgThrottleEl.textContent = Math.round(avgThrottle) + '%';
+  avgBrakeEl.textContent = Math.round(avgBrake) + '%';
 }
 
 function drawTelemetryTrace(field, svgId, emptyId, maxOverride){
