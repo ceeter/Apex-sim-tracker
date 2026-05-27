@@ -605,6 +605,8 @@ function setMode(mode){
     document.getElementById('cell6Label').textContent = GAME_CONFIG[currentGame].cell6;
     document.getElementById('cell6Unit').textContent = GAME_CONFIG[currentGame].cell6Unit;
     document.querySelector('.section-title').textContent = 'Inputs';
+    document.getElementById('boostLabel').textContent = GAME_CONFIG[currentGame].cell6;
+    document.getElementById('tVal_boost').textContent = '0' + GAME_CONFIG[currentGame].cell6Unit.toLowerCase();
   }
 }
   currentMode = mode;
