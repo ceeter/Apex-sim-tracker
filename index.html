@@ -363,6 +363,13 @@ svg.chart{width:100%;height:68px;overflow:visible;}
         <div class="summary-card"><div class="s-label">Average</div><div class="s-val" id="sumAvg">—</div></div>
         <div class="summary-card"><div class="s-label">Consistency</div><div class="s-val" id="sumConsist">—</div></div>
       </div>
+      <div class="section-title" style="margin-bottom:0">Telemetry Summary</div>
+<div class="summary-grid">
+  <div class="summary-card"><div class="s-label">Max Speed</div><div class="s-val" id="telMaxSpeed">—</div></div>
+  <div class="summary-card"><div class="s-label">Avg Throttle</div><div class="s-val" id="telAvgThrottle">—</div></div>
+  <div class="summary-card"><div class="s-label">Avg Brake</div><div class="s-val" id="telAvgBrake">—</div></div>
+  <div class="summary-card"><div class="s-label">Samples</div><div class="s-val" id="telSamples">0</div></div>
+</div>
       <div class="section-title" style="margin-bottom:0">Lap Times Chart</div>
       <div class="chart-wrap">
         <svg class="chart" id="lapChart" viewBox="0 0 300 68" preserveAspectRatio="none"></svg>
@@ -803,7 +810,35 @@ function renderLaps(){
 }
 
 // ── Stats ─────────────────────────────────────────────
+function renderTelemetrySummary(){
+  const telemetry = sessions[activeSession].telemetry || [];
+
+  const maxSpeedEl = document.getElementById('telMaxSpeed');
+  const avgThrottleEl = document.getElementById('telAvgThrottle');
+  const avgBrakeEl = document.getElementById('telAvgBrake');
+  const samplesEl = document.getElementById('telSamples');
+
+  if(!maxSpeedEl || !avgThrottleEl || !avgBrakeEl || !samplesEl) return;
+
+  samplesEl.textContent = telemetry.length;
+
+  if(!telemetry.length){
+    maxSpeedEl.textContent = '—';
+    avgThrottleEl.textContent = '—';
+    avgBrakeEl.textContent = '—';
+    return;
+  }
+
+  const maxSpeed = Math.max(...telemetry.map(t => t.speed || 0));
+  const avgThrottle = telemetry.reduce((sum,t)=>sum+(t.throttle||0),0) / telemetry.length;
+  const avgBrake = telemetry.reduce((sum,t)=>sum+(t.brake||0),0) / telemetry.length;
+
+  maxSpeedEl.textContent = Math.round(maxSpeed) + ' MPH';
+  avgThrottleEl.textContent = Math.round(avgThrottle) + '%';
+  avgBrakeEl.textContent = Math.round(avgBrake) + '%';
+}
 function renderSummary(){
+  renderTelemetrySummary();
   const laps=sessions[activeSession].laps;
   document.getElementById('sumLaps').textContent=laps.length;
   if(!laps.length){['sumBest','sumAvg','sumConsist'].forEach(id=>document.getElementById(id).textContent='—');return;}
@@ -908,6 +943,7 @@ recordTelemetry({
 });
 
 save();
+renderTelemetrySummary();
 },350);
 }
 function setLive(id,v){document.getElementById(id).textContent=v;}
