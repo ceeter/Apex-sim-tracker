@@ -1139,16 +1139,18 @@ function handleTelemetryPacket(d, source='ws'){
     setTbar('boost', Math.min((extraValue / 22) * 100, 100), 100, extraValue + 'psi');
   }
 
-  handleTelemetryPacket({
-  speed: spd,
-  rpm: parseFloat(rpm),
-  throttle: thr,
-  brake: brk,
-  clutch: clut,
-  steering: steering,
-  gear: Math.min(Math.ceil(spd/45),8),
-  extra: extraValue
-}, 'demo');
+  recordTelemetry({
+    speed,
+    rpm: Number(rpm),
+    throttle,
+    brake,
+    steering,
+    gear,
+    extra: extraValue
+  });
+
+  renderTelemetrySummary();
+  renderTelemetryTraceCharts();
 }
 
 // ── WebSocket ─────────────────────────────────────────
@@ -1182,18 +1184,9 @@ function connectWS(game){
       const d=JSON.parse(e.data);
       if(game!==currentGame)return; // only process active game
       handleTelemetryPacket(d, 'ws');
-      
-      // Common fields
-      if(d.speed!==undefined)setLive('lSpeed',Math.round(d.speed*2.237));
-      if(d.rpm!==undefined)setLive('lRPM',(d.rpm/1000).toFixed(1));
-      if(d.gear!==undefined)setLive('lGear',d.gear);
-      if(d.throttle!==undefined){const v=Math.round(d.throttle*100);setLive('lThrottle',v);setTbar('throttle',v,100,v+'%');}
-      if(d.brake!==undefined){const v=Math.round(d.brake*100);setLive('lBrake',v);setTbar('brake',v,100,v+'%');}
-      if(d.clutch!==undefined){const v=Math.round(d.clutch*100);setTbar('clutch',v,100,v+'%');}
-      // Game-specific
-      if(game==='fh6'&&d.boost!==undefined){const v=Math.round(d.boost*.145);setLive('lCell6',v);setTbar('boost',(v/22)*100,100,v+'psi');}
+
+      // Game-specific auxiliary fields
       if(game==='f1'){
-        if(d.ersStoreEnergy!==undefined){const v=Math.round(d.ersStoreEnergy/1000);setLive('lCell6',v);setTbar('boost',(v/4000)*100,100,v+'kJ');}
         if(d.fuelInTank!==undefined)setEl('f1Fuel',d.fuelInTank.toFixed(1)+'kg');
         if(d.actualTyreCompound!==undefined)setEl('f1Compound',['Inter','Wet','','','','Soft','Med','Hard'][d.actualTyreCompound]||'—');
         if(d.drsAllowed!==undefined)setEl('f1DRS',d.drsAllowed?'OPEN':'CLOSED');
@@ -1202,12 +1195,13 @@ function connectWS(game){
         if(d.ersDeployMode!==undefined)setEl('f1ERS',['None','Medium','Hotlap','Overtake'][d.ersDeployMode]||'—');
       }
       if(game==='ir'){
-        if(d.FuelLevel!==undefined){const v=d.FuelLevel.toFixed(1);setLive('lCell6',v);setTbar('boost',(v/50)*100,100,v+'L');setEl('irFuel',v+'L');}
+        if(d.FuelLevel!==undefined)setEl('irFuel',d.FuelLevel.toFixed(1)+'L');
         if(d.PlayerCarInPitStall!==undefined||d.Lap!==undefined)setEl('irLap',d.Lap||'—');
         if(d.PlayerCarPosition!==undefined)setEl('irPos',d.PlayerCarPosition);
         if(d.PlayerCarMyIncidentCount!==undefined)setEl('irIncidents',d.PlayerCarMyIncidentCount);
         if(d.TrackTempCrew!==undefined)setEl('irTrackTemp',d.TrackTempCrew.toFixed(1)+'°C');
       }
+
       // Tyre temps
       ['fl','fr','rl','rr'].forEach(w=>{
         const key='tireTemp'+w.toUpperCase();
@@ -1249,6 +1243,7 @@ function importCSV(inp){
       const p=line.split(',');if(p.length<3)return;
       const ms=parseInt(p[2]);if(isNaN(ms))return;
       sessions[activeSession].laps.push({id:makeId(),ms,car:p[3]||'—',track:p[4]||'—',cls:p[5]||'—',cond:p[6]||'—',game:p[7]||'fh6',mode:currentMode});
+      n++;
     });
     save();renderLaps();renderSummary();renderChart();showToast(`Imported ${n} laps ✓`);inp.value='';
   };
