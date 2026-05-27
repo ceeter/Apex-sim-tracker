@@ -888,7 +888,7 @@ function renderSummary(){
   document.getElementById('sumLaps').textContent=laps.length;
   if(!laps.length){['sumBest','sumAvg','sumConsist'].forEach(id=>document.getElementById(id).textContent='—');return;}
   const times=laps.map(l=>l.ms);
-  const best=Math.min(.times),avg=times.reduce((a,b)=>a+b,0)/times.length;
+  const best=Math.min(...times),avg=times.reduce((a,b)=>a+b,0)/times.length;
   const std=Math.sqrt(times.reduce((a,b)=>a+Math.pow(b-avg,2),0)/times.length);
   document.getElementById('sumBest').textContent=msToStr(best);
   document.getElementById('sumAvg').textContent=msToStr(Math.round(avg));
