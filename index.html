@@ -549,6 +549,27 @@ let wsConns = { fh6:null, f1:null, ir:null };
 let currentMode = localStorage.getItem('apex_mode') || 'race';
 
 function setMode(mode){
+  function updateModeTelemetryLabels(){
+  if(currentMode === 'drift'){
+    document.querySelector('#page-live .live-grid .live-cell:nth-child(1) .live-label').textContent = 'Entry Speed';
+    document.querySelector('#page-live .live-grid .live-cell:nth-child(2) .live-label').textContent = 'RPM';
+    document.querySelector('#page-live .live-grid .live-cell:nth-child(3) .live-label').textContent = 'Gear';
+    document.querySelector('#page-live .live-grid .live-cell:nth-child(4) .live-label').textContent = 'Throttle';
+    document.querySelector('#page-live .live-grid .live-cell:nth-child(5) .live-label').textContent = 'Brake';
+    document.getElementById('cell6Label').textContent = 'Angle';
+    document.getElementById('cell6Unit').textContent = '°';
+    document.querySelector('.section-title').textContent = 'Drift Inputs';
+  } else {
+    document.querySelector('#page-live .live-grid .live-cell:nth-child(1) .live-label').textContent = 'Speed';
+    document.querySelector('#page-live .live-grid .live-cell:nth-child(2) .live-label').textContent = 'RPM';
+    document.querySelector('#page-live .live-grid .live-cell:nth-child(3) .live-label').textContent = 'Gear';
+    document.querySelector('#page-live .live-grid .live-cell:nth-child(4) .live-label').textContent = 'Throttle';
+    document.querySelector('#page-live .live-grid .live-cell:nth-child(5) .live-label').textContent = 'Brake';
+    document.getElementById('cell6Label').textContent = GAME_CONFIG[currentGame].cell6;
+    document.getElementById('cell6Unit').textContent = GAME_CONFIG[currentGame].cell6Unit;
+    document.querySelector('.section-title').textContent = 'Inputs';
+  }
+}
   currentMode = mode;
   localStorage.setItem('apex_mode', mode);
 
@@ -558,8 +579,16 @@ function setMode(mode){
   document.getElementById('raceModeBtn').classList.toggle('active', mode === 'race');
   document.getElementById('driftModeBtn').classList.toggle('active', mode === 'drift');
 
+  updateModeTelemetryLabels();
+  ensureModeSession();
+  renderTabs();
+  renderLaps();
+  renderSummary();
+  renderChart();
+
   showToast(mode === 'drift' ? 'Drift mode active' : 'Race mode active');
 }
+
 // ── Game switching ────────────────────────────────────
 function selectGame(g) {
   currentGame = g;
@@ -616,18 +645,39 @@ function showPage(id, btn) {
 
 // ── Session Tabs ──────────────────────────────────────
 function renderTabs() {
+  function ensureModeSession(){
+  const foundIndex = sessions.findIndex(s => (s.mode || 'race') === currentMode);
+
+  if(foundIndex === -1){
+    sessions.push({
+      id: Date.now(),
+      name: currentMode === 'drift' ? 'Drift Session 1' : 'Race Session 1',
+      laps: [],
+      notes: '',
+      game: currentGame,
+      mode: currentMode
+    });
+    activeSession = sessions.length - 1;
+    save();
+  } else if ((sessions[activeSession]?.mode || 'race') !== currentMode) {
+    activeSession = foundIndex;
+  }
+}
   const c = document.getElementById('sessionTabs');
   c.querySelectorAll('.session-tab').forEach(e=>e.remove());
+
   sessions.forEach((s,i) => {
+    if ((s.mode || 'race') !== currentMode) return;
+
     const t = document.createElement('button');
     t.className = 'session-tab'+(i===activeSession?' active':'');
     t.innerHTML = `
-  ${s.name}
-  <span onclick="event.stopPropagation(); deleteSession(${i})"
-  style="margin-left:6px;color:red;cursor:pointer;">
-    ✕
-  </span>
-`;
+      ${s.name}
+      <span onclick="event.stopPropagation(); deleteSession(${i})"
+      style="margin-left:6px;color:red;cursor:pointer;">
+        ✕
+      </span>
+    `;
     t.onclick = ()=>switchSession(i);
     t.addEventListener('dblclick', ()=>renameSession(i,t));
     c.insertBefore(t, c.querySelector('.add-session-btn'));
@@ -638,9 +688,23 @@ function switchSession(i) {
   document.getElementById('setupNotes').value = sessions[i].notes||'';
 }
 function addSession() {
-  sessions.push({id:Date.now(),name:`Session ${sessions.length+1}`,laps:[],notes:'',game:currentGame});
-  save(); activeSession=sessions.length-1;
-  renderTabs(); renderLaps(); renderSummary(); renderChart();
+  const count = sessions.filter(s => (s.mode || 'race') === currentMode).length + 1;
+
+  sessions.push({
+    id: Date.now(),
+    name: currentMode === 'drift' ? `Drift Session ${count}` : `Race Session ${count}`,
+    laps: [],
+    notes: '',
+    game: currentGame,
+    mode: currentMode
+  });
+
+  save();
+  activeSession = sessions.length - 1;
+  renderTabs();
+  renderLaps();
+  renderSummary();
+  renderChart();
 }
 function deleteSession(index) {
 
@@ -700,7 +764,7 @@ function addLap(ov={}){
   const game =ov.game  ||currentGame;
   const ms=parseTime(raw);
   if(!ms){showToast('Bad format — use M:SS.mmm');return;}
-  sessions[activeSession].laps.push({id:Date.now(),ms,car,track,cond,cls,game});
+  sessions[activeSession].laps.push({id:Date.now(),ms,car,track,cond,cls,game,mode:currentMode});
   save();
   if(!ov.silent)document.getElementById('inputLapTime').value='';
   if(sessions[activeSession].laps.length===1&&!sessionTimer)startTimer();
