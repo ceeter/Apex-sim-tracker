@@ -378,7 +378,11 @@ svg.chart{width:100%;height:68px;overflow:visible;}
   <svg class="chart" id="speedTraceChart" viewBox="0 0 300 68" preserveAspectRatio="none"></svg>
   <div id="speedTraceEmpty" style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--text-dim);margin-top:7px;text-align:center;">Run demo to see speed trace</div>
 </div>
-
+<div class="chart-wrap">
+  <div class="s-label">Steering Trace</div>
+  <svg class="chart" id="steeringTraceChart" viewBox="0 0 300 68" preserveAspectRatio="none"></svg>
+  <div id="steeringTraceEmpty" style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--text-dim);margin-top:7px;text-align:center;">Run demo to see steering trace</div>
+</div>
 <div class="chart-wrap">
   <div class="s-label">Throttle Trace</div>
   <svg class="chart" id="throttleTraceChart" viewBox="0 0 300 68" preserveAspectRatio="none"></svg>
@@ -913,6 +917,7 @@ function renderTelemetryTraceCharts(){
   drawTelemetryTrace('speed','speedTraceChart','speedTraceEmpty');
   drawTelemetryTrace('throttle','throttleTraceChart','throttleTraceEmpty',100);
   drawTelemetryTrace('brake','brakeTraceChart','brakeTraceEmpty',100);
+  drawTelemetryTrace('steering','steeringTraceChart','steeringTraceEmpty',100);
 }
 
 function renderSummary(){
@@ -994,6 +999,7 @@ function startDemo(){
     const spd=80+Math.random()*200|0,rpm=(4+Math.random()*6).toFixed(1);
     const thr=30+Math.random()*70|0,brk=Math.random()>.7?Math.random()*80|0:0;
     const clut=Math.random()>.85?Math.random()*100|0:0;
+    const steering = Math.round(Math.sin(Date.now() / 450) * 70 + (Math.random() - 0.5) * 20);
     let extraValue = 0;
     setLive('lSpeed',spd);setLive('lRPM',rpm);setLive('lGear',Math.min(Math.ceil(spd/45),8));
     setLive('lThrottle',thr);setLive('lBrake',brk);
@@ -1018,6 +1024,7 @@ recordTelemetry({
   rpm: parseFloat(rpm),
   throttle: thr,
   brake: brk,
+  steering: steering,
   gear: Math.min(Math.ceil(spd/45),8),
   extra: extraValue
 });
@@ -1041,6 +1048,7 @@ function recordTelemetry(data){
     rpm: data.rpm || 0,
     throttle: data.throttle || 0,
     brake: data.brake || 0,
+    steering: data.steering || 0,
     gear: data.gear || 0,
     extra: data.extra || 0,
     mode: currentMode,
