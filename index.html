@@ -580,7 +580,6 @@ function setMode(mode){
   document.getElementById('driftModeBtn').classList.toggle('active', mode === 'drift');
 
   updateModeTelemetryLabels();
-  ensureModeSession();
   renderTabs();
   renderLaps();
   renderSummary();
