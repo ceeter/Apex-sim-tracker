@@ -861,7 +861,13 @@ function renderTelemetrySummary(){
   avgThrottleEl.textContent = Math.round(avgThrottle) + '%';
   avgBrakeEl.textContent = Math.round(avgBrake) + '%';
 }
-
+function smoothData(data, windowSize = 5){
+  return data.map((value, index) => {
+    const start = Math.max(0, index - windowSize + 1);
+    const slice = data.slice(start, index + 1);
+    return slice.reduce((sum, v) => sum + v, 0) / slice.length;
+  });
+}
 function drawTelemetryTrace(field, svgId, emptyId, maxOverride){
   const telemetry = sessions[activeSession].telemetry || [];
   const svg = document.getElementById(svgId);
@@ -878,7 +884,8 @@ function drawTelemetryTrace(field, svgId, emptyId, maxOverride){
 
   empty.style.display = 'none';
 
-  const data = telemetry.slice(-300).map(t => Number(t[field] || 0));
+  const rawData = telemetry.slice(-300).map(t => Number(t[field] || 0));
+  const data = smoothData(rawData, 5);
   const W = 300, H = 68, P = 4;
   const lo = 0;
   const hi = maxOverride || Math.max(...data, 1);
