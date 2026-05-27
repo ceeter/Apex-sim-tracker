@@ -879,17 +879,32 @@ function startDemo(){
     const spd=80+Math.random()*200|0,rpm=(4+Math.random()*6).toFixed(1);
     const thr=30+Math.random()*70|0,brk=Math.random()>.7?Math.random()*80|0:0;
     const clut=Math.random()>.85?Math.random()*100|0:0;
+    let extraValue = 0;
     setLive('lSpeed',spd);setLive('lRPM',rpm);setLive('lGear',Math.min(Math.ceil(spd/45),8));
     setLive('lThrottle',thr);setLive('lBrake',brk);
-    if(currentGame==='fh6'){const bst=Math.random()*22|0;setLive('lCell6',bst);setTbar('boost',(bst/22)*100,100,bst+'psi');}
-    if(currentGame==='f1'){const ers=Math.random()*4000|0;setLive('lCell6',ers);setTbar('boost',(ers/4000)*100,100,ers+'kJ');setEl('f1ERS',['Harvest','Overtake','None','Hotlap'][Math.random()*4|0]);setEl('f1Fuel',(Math.random()*50+10).toFixed(1)+'kg');setEl('f1Compound',['Soft','Medium','Hard','Inter'][Math.random()*4|0]);setEl('f1DRS',Math.random()>.5?'OPEN':'CLOSED');setEl('f1Lap',lap);setEl('f1Pos',Math.floor(Math.random()*20+1));}
-    if(currentGame==='ir'){const fuel=(Math.random()*40+5).toFixed(1);setLive('lCell6',fuel);setTbar('boost',(fuel/45)*100,100,fuel+'L');setEl('irFuel',fuel+'L');setEl('irIncidents',Math.floor(Math.random()*8));setEl('irTrackTemp',(30+Math.random()*20).toFixed(1)+'°C');setEl('irLap',lap);setEl('irPos',Math.floor(Math.random()*20+1));setEl('irIRating','2,'+(Math.random()*900+100|0));}
+    if(currentGame==='fh6'){
+  const bst=Math.random()*22|0;
+  extraValue = bst;
+  setLive('lCell6',bst);
+  setTbar('boost',(bst/22)*100,100,bst+'psi');
+}
+    if(currentGame==='f1'){const ers=Math.random()*4000|0;extraValue = ers;setLive('lCell6',ers);setTbar('boost',(ers/4000)*100,100,ers+'kJ');setEl('f1ERS',['Harvest','Overtake','None','Hotlap'][Math.random()*4|0]);setEl('f1Fuel',(Math.random()*50+10).toFixed(1)+'kg');setEl('f1Compound',['Soft','Medium','Hard','Inter'][Math.random()*4|0]);setEl('f1DRS',Math.random()>.5?'OPEN':'CLOSED');setEl('f1Lap',lap);setEl('f1Pos',Math.floor(Math.random()*20+1));}
+    if(currentGame==='ir'){const fuel=(Math.random()*40+5).toFixed(1);extraValue = parseFloat(fuel);setLive('lCell6',fuel);setTbar('boost',(fuel/45)*100,100,fuel+'L');setEl('irFuel',fuel+'L');setEl('irIncidents',Math.floor(Math.random()*8));setEl('irTrackTemp',(30+Math.random()*20).toFixed(1)+'°C');setEl('irLap',lap);setEl('irPos',Math.floor(Math.random()*20+1));setEl('irIRating','2,'+(Math.random()*900+100|0));}
     setTbar('throttle',thr,100,thr+'%');setTbar('brake',brk,100,brk+'%');setTbar('clutch',clut,100,clut+'%');
     const tb=180+spd*.4;
     ['fl','fr','rl','rr'].forEach(w=>{
       const t=Math.round(tb+(Math.random()-.5)*40),el=document.getElementById('tire_'+w);
       el.textContent=t+'°';el.className='tire-val '+(t>240?'hot':t>200?'warm':t>160?'ok':'cool');
-    });
+    recordTelemetry({
+  speed: spd,
+  rpm: parseFloat(rpm),
+  throttle: thr,
+  brake: brk,
+  gear: Math.min(Math.ceil(spd/45),8),
+  extra: extraValue
+});
+
+save();
   },350);
 }
 function setLive(id,v){document.getElementById(id).textContent=v;}
