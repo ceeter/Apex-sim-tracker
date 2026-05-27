@@ -541,7 +541,7 @@ const GAME_CONFIG = {
 // ── State ─────────────────────────────────────────────
 let currentGame = 'fh6';
 let sessions = JSON.parse(localStorage.getItem('apex3_sessions') || 'null')
-  || [{ id:1, name:'Session 1', laps:[], notes:'', game:'fh6' }];
+  || [{ id:1, name:'Session 1', laps:[], telemetry:[], notes:'', game:'fh6' }];
 let activeSession = 0;
 let sessionTimer = null, sessionSecs = 0;
 let demoInterval = null, telemInterval = null;
@@ -652,6 +652,7 @@ function renderTabs() {
       id: makeId(),
       name: currentMode === 'drift' ? 'Drift Session 1' : 'Race Session 1',
       laps: [],
+      telemetry: [],
       notes: '',
       game: currentGame,
       mode: currentMode
@@ -693,6 +694,7 @@ function addSession() {
     id: makeId(),
     name: currentMode === 'drift' ? `Drift Session ${count}` : `Race Session ${count}`,
     laps: [],
+    telemetry: [],
     notes: '',
     game: currentGame,
     mode: currentMode
@@ -884,9 +886,43 @@ function startDemo(){
       el.textContent=t+'°';el.className='tire-val '+(t>240?'hot':t>200?'warm':t>160?'ok':'cool');
     });
   },350);
-}
+recordTelemetry({
+  speed: spd,
+  rpm: parseFloat(rpm),
+  throttle: thr,
+  brake: brk,
+  gear: Math.min(Math.ceil(spd/45),8),
+  extra: currentGame === 'fh6'
+    ? bst
+    : currentGame === 'f1'
+    ? ers
+    : fuel
+});
 function setLive(id,v){document.getElementById(id).textContent=v;}
 function setEl(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
+function recordTelemetry(data){
+
+  if(!sessions[activeSession].telemetry){
+    sessions[activeSession].telemetry = [];
+  }
+
+  sessions[activeSession].telemetry.push({
+    timestamp: Date.now(),
+    speed: data.speed || 0,
+    rpm: data.rpm || 0,
+    throttle: data.throttle || 0,
+    brake: data.brake || 0,
+    gear: data.gear || 0,
+    extra: data.extra || 0,
+    mode: currentMode,
+    game: currentGame
+  });
+
+  // prevent memory explosion
+  if(sessions[activeSession].telemetry.length > 5000){
+    sessions[activeSession].telemetry.shift();
+  }
+}
 function setTbar(k,pct,max,lbl){document.getElementById('tBar_'+k).style.width=Math.min(100,pct)+'%';document.getElementById('tVal_'+k).textContent=lbl;}
 
 // ── WebSocket ─────────────────────────────────────────
