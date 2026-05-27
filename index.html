@@ -893,9 +893,12 @@ function startDemo(){
     setTbar('throttle',thr,100,thr+'%');setTbar('brake',brk,100,brk+'%');setTbar('clutch',clut,100,clut+'%');
     const tb=180+spd*.4;
     ['fl','fr','rl','rr'].forEach(w=>{
-      const t=Math.round(tb+(Math.random()-.5)*40),el=document.getElementById('tire_'+w);
-      el.textContent=t+'°';el.className='tire-val '+(t>240?'hot':t>200?'warm':t>160?'ok':'cool');
-    recordTelemetry({
+  const t=Math.round(tb+(Math.random()-.5)*40),el=document.getElementById('tire_'+w);
+  el.textContent=t+'°';
+  el.className='tire-val '+(t>240?'hot':t>200?'warm':t>160?'ok':'cool');
+});
+
+recordTelemetry({
   speed: spd,
   rpm: parseFloat(rpm),
   throttle: thr,
@@ -905,7 +908,7 @@ function startDemo(){
 });
 
 save();
-  },350);
+},350);
 }
 function setLive(id,v){document.getElementById(id).textContent=v;}
 function setEl(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
