@@ -370,13 +370,28 @@ svg.chart{width:100%;height:68px;overflow:visible;}
   <div class="summary-card"><div class="s-label">Avg Brake</div><div class="s-val" id="telAvgBrake">—</div></div>
   <div class="summary-card"><div class="s-label">Samples</div><div class="s-val" id="telSamples">0</div></div>
 </div>
-      <div class="section-title" style="margin-bottom:0">Lap Times Chart</div>
-      <div class="chart-wrap">
-        <svg class="chart" id="lapChart" viewBox="0 0 300 68" preserveAspectRatio="none"></svg>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--text-dim);margin-top:7px;text-align:center;" id="chartEmpty">Add 2+ laps to see chart</div>
-      </div>
-    </div>
-  </div>
+
+<div class="section-title" style="margin-bottom:0">Telemetry Traces</div>
+
+<div class="chart-wrap">
+  <div class="s-label">Speed Trace</div>
+  <svg class="chart" id="speedTraceChart" viewBox="0 0 300 68" preserveAspectRatio="none"></svg>
+  <div id="speedTraceEmpty" style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--text-dim);margin-top:7px;text-align:center;">Run demo to see speed trace</div>
+</div>
+
+<div class="chart-wrap">
+  <div class="s-label">Throttle Trace</div>
+  <svg class="chart" id="throttleTraceChart" viewBox="0 0 300 68" preserveAspectRatio="none"></svg>
+  <div id="throttleTraceEmpty" style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--text-dim);margin-top:7px;text-align:center;">Run demo to see throttle trace</div>
+</div>
+
+<div class="chart-wrap">
+  <div class="s-label">Brake Trace</div>
+  <svg class="chart" id="brakeTraceChart" viewBox="0 0 300 68" preserveAspectRatio="none"></svg>
+  <div id="brakeTraceEmpty" style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--text-dim);margin-top:7px;text-align:center;">Run demo to see brake trace</div>
+</div>
+
+<div class="section-title" style="margin-bottom:0">Lap Times Chart</div>
 
   <!-- PAGE: SETUP -->
   <div class="page" id="page-setup">
@@ -810,35 +825,56 @@ function renderLaps(){
 }
 
 // ── Stats ─────────────────────────────────────────────
-function renderTelemetrySummary(){
+function drawTelemetryTrace(field, svgId, emptyId, maxOverride){
   const telemetry = sessions[activeSession].telemetry || [];
+  const svg = document.getElementById(svgId);
+  const empty = document.getElementById(emptyId);
 
-  const maxSpeedEl = document.getElementById('telMaxSpeed');
-  const avgThrottleEl = document.getElementById('telAvgThrottle');
-  const avgBrakeEl = document.getElementById('telAvgBrake');
-  const samplesEl = document.getElementById('telSamples');
+  if(!svg || !empty) return;
 
-  if(!maxSpeedEl || !avgThrottleEl || !avgBrakeEl || !samplesEl) return;
+  svg.innerHTML = '';
 
-  samplesEl.textContent = telemetry.length;
-
-  if(!telemetry.length){
-    maxSpeedEl.textContent = '—';
-    avgThrottleEl.textContent = '—';
-    avgBrakeEl.textContent = '—';
+  if(telemetry.length < 2){
+    empty.style.display = 'block';
     return;
   }
 
-  const maxSpeed = Math.max(...telemetry.map(t => t.speed || 0));
-  const avgThrottle = telemetry.reduce((sum,t)=>sum+(t.throttle||0),0) / telemetry.length;
-  const avgBrake = telemetry.reduce((sum,t)=>sum+(t.brake||0),0) / telemetry.length;
+  empty.style.display = 'none';
 
-  maxSpeedEl.textContent = Math.round(maxSpeed) + ' MPH';
-  avgThrottleEl.textContent = Math.round(avgThrottle) + '%';
-  avgBrakeEl.textContent = Math.round(avgBrake) + '%';
+  const data = telemetry.slice(-300).map(t => Number(t[field] || 0));
+  const W = 300, H = 68, P = 4;
+  const lo = 0;
+  const hi = maxOverride || Math.max(...data, 1);
+  const range = hi - lo || 1;
+
+  const pts = data.map((v,i)=>[
+    P + (i / (data.length - 1)) * (W - P * 2),
+    H - P - ((v - lo) / range) * (H - P * 2)
+  ]);
+
+  const area = document.createElementNS('http://www.w3.org/2000/svg','path');
+  area.setAttribute('d', `M ${pts[0][0]},${H} ` + pts.map(p=>`L ${p[0]},${p[1]}`).join(' ') + ` L ${pts[pts.length-1][0]},${H} Z`);
+  area.setAttribute('fill','rgba(232,255,58,0.07)');
+  svg.appendChild(area);
+
+  const line = document.createElementNS('http://www.w3.org/2000/svg','path');
+  line.setAttribute('d', `M ${pts[0][0]},${pts[0][1]} ` + pts.slice(1).map(p=>`L ${p[0]},${p[1]}`).join(' '));
+  line.setAttribute('fill','none');
+  line.setAttribute('stroke','var(--accent)');
+  line.setAttribute('stroke-width','1.5');
+  svg.appendChild(line);
 }
+
+function renderTelemetryTraceCharts(){
+  drawTelemetryTrace('speed','speedTraceChart','speedTraceEmpty');
+  drawTelemetryTrace('throttle','throttleTraceChart','throttleTraceEmpty',100);
+  drawTelemetryTrace('brake','brakeTraceChart','brakeTraceEmpty',100);
+}
+
 function renderSummary(){
   renderTelemetrySummary();
+  renderTelemetryTraceCharts();
+
   const laps=sessions[activeSession].laps;
   document.getElementById('sumLaps').textContent=laps.length;
   if(!laps.length){['sumBest','sumAvg','sumConsist'].forEach(id=>document.getElementById(id).textContent='—');return;}
@@ -944,6 +980,7 @@ recordTelemetry({
 
 save();
 renderTelemetrySummary();
+renderTelemetryTraceCharts();
 },350);
 }
 function setLive(id,v){document.getElementById(id).textContent=v;}
