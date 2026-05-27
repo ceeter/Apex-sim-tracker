@@ -591,7 +591,13 @@ function renderTabs() {
   sessions.forEach((s,i) => {
     const t = document.createElement('button');
     t.className = 'session-tab'+(i===activeSession?' active':'');
-    t.textContent = s.name;
+    t.innerHTML = `
+  ${s.name}
+  <span onclick="event.stopPropagation(); deleteSession(${i})"
+  style="margin-left:6px;color:red;cursor:pointer;">
+    ✕
+  </span>
+`;
     t.onclick = ()=>switchSession(i);
     t.addEventListener('dblclick', ()=>renameSession(i,t));
     c.insertBefore(t, c.querySelector('.add-session-btn'));
@@ -605,6 +611,34 @@ function addSession() {
   sessions.push({id:Date.now(),name:`Session ${sessions.length+1}`,laps:[],notes:'',game:currentGame});
   save(); activeSession=sessions.length-1;
   renderTabs(); renderLaps(); renderSummary(); renderChart();
+}
+function deleteSession(index) {
+
+  if (sessions.length <= 1) {
+    showToast('Cannot delete last session');
+    return;
+  }
+
+  const confirmDelete = confirm(
+    `Delete ${sessions[index].name}?`
+  );
+
+  if (!confirmDelete) return;
+
+  sessions.splice(index, 1);
+
+  if (activeSession >= sessions.length) {
+    activeSession = sessions.length - 1;
+  }
+
+  save();
+
+  renderTabs();
+  renderLaps();
+  renderSummary();
+  renderChart();
+
+  showToast('Session deleted');
 }
 function renameSession(i,el) {
   const orig=sessions[i].name;
