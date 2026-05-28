@@ -542,7 +542,7 @@ svg.chart{width:100%;height:68px;overflow:visible;}
 // ── Game config ───────────────────────────────────────
 async function fetchLiveTelemetry() {
   try {
-    const response = await fetch("http://localhost:8080/telemetry");
+    const response = await fetch("http://127.0.0.1:2068");
     const data = await response.json();
 
     console.log("Live telemetry:", data);
