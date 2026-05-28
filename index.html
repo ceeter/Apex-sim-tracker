@@ -1183,10 +1183,23 @@ function handleTelemetryPacket(d, source='ws'){
 
 // ── WebSocket ─────────────────────────────────────────
 function connectWS(game){
-  const url=document.getElementById('wsUrl_'+game).value.trim();
+  const rawUrl=document.getElementById('wsUrl_'+game).value.trim();
   if(wsConns[game]){wsConns[game].close();wsConns[game]=null;}
+
+  let url = rawUrl;
+  try{
+    const parsed = new URL(rawUrl);
+    if(location.protocol === 'https:' && parsed.protocol === 'ws:') parsed.protocol = 'wss:';
+    if(!['localhost','127.0.0.1','::1'].includes(location.hostname) && ['localhost','127.0.0.1','::1'].includes(parsed.hostname)){
+      parsed.hostname = location.hostname;
+      showToast('Switched loopback to this device IP; ensure bridge allows remote clients');
+    }
+    url = parsed.toString();
+    document.getElementById('wsUrl_'+game).value = url;
+  }catch(e){showToast('Invalid URL');return;}
+
   let ws;
-  try{ws=new WebSocket(url);}catch(e){showToast('Invalid URL');return;}
+  try{ws=new WebSocket(url);}catch(e){showToast('Could not open socket URL');return;}
   wsConns[game]=ws;
   const dot=document.getElementById('bdot_'+game),stxt=document.getElementById('bstat_'+game),btn=document.getElementById('wsBtn_'+game);
   ws.onopen=()=>{
@@ -1206,7 +1219,7 @@ function connectWS(game){
     if(game===currentGame){document.getElementById('connectDot').classList.remove('connected');document.getElementById('connectStrong').textContent='Bridge not connected';}
     wsConns[game]=null;
   };
-  ws.onerror=()=>showToast('Could not connect to bridge');
+  ws.onerror=()=>showToast('Bridge unreachable. Check IP/port, firewall, and ws vs wss');
   ws.onmessage=e=>{
     try{
       const d=JSON.parse(e.data);
