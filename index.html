@@ -540,6 +540,34 @@ svg.chart{width:100%;height:68px;overflow:visible;}
 
 <script>
 // ── Game config ───────────────────────────────────────
+async function fetchLiveTelemetry() {
+  try {
+    const response = await fetch("http://localhost:8080/telemetry");
+    const data = await response.json();
+
+    console.log("Live telemetry:", data);
+
+    // Example values you can connect to your UI
+    const speedEl = document.getElementById("speed");
+    const rpmEl = document.getElementById("rpm");
+    const gearEl = document.getElementById("gear");
+    const throttleEl = document.getElementById("throttle");
+    const brakeEl = document.getElementById("brake");
+    const steeringEl = document.getElementById("steering");
+
+    if (speedEl) speedEl.textContent = data.speedMph;
+    if (rpmEl) rpmEl.textContent = data.rpm;
+    if (gearEl) gearEl.textContent = data.gear;
+    if (throttleEl) throttleEl.textContent = data.throttle + "%";
+    if (brakeEl) brakeEl.textContent = data.brake + "%";
+    if (steeringEl) steeringEl.textContent = data.steering + "%";
+
+  } catch (error) {
+    console.log("Telemetry bridge not connected yet.");
+  }
+}
+
+setInterval(fetchLiveTelemetry, 250);
 const GAME_CONFIG = {
   fh6: {
     label:'FH6', sub:'// FH6 · Japan',
